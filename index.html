@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แอปออมเงิน Pro - ระบบควบคุมงบรายวัน</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --primary-light: #d1fae5;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 16px 16px 80px 16px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 0.75rem;
+            font-weight: 500;
+            flex: 1;
+            transition: 0.2s;
+        }
+
+        .nav-item span.icon { font-size: 1.3rem; margin-bottom: 2px; }
+        .nav-item.active { color: var(--primary); }
+
+        .total-banner {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .total-banner .label { font-size: 0.85rem; opacity: 0.9; }
+        .total-banner .amount { font-size: 1.8rem; font-weight: 600; margin-top: 2px; }
+
+        .jars-section { margin-bottom: 16px; }
+        .jars-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .jars-header h2 { font-size: 1rem; font-weight: 600; }
+        .btn-add-jar {
+            background-color: var(--text);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .jars-list {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            scrollbar-width: thin;
+        }
+
+        .jar-chip {
+            background: var(--card);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 12px 16px;
+            min-width: 130px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            flex-shrink: 0;
+        }
+        .jar-chip.active { border-color: var(--primary); background-color: #f0fdf4; }
+        .jar-chip-icon { font-size: 1.4rem; margin-bottom: 4px; }
+        .jar-chip-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 110px;
+        }
+        .jar-chip-balance { font-size: 0.8rem; color: var(--primary-dark); font-weight: 600; margin-top: 2px; }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 16px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .jar-title-group { display: flex; align-items: center; gap: 8px; }
+        .jar-title-group h3 { font-size: 1.15rem; font-weight: 600; }
+        .jar-actions { display: flex; gap: 6px; }
+
+        .btn-icon {
+            background: #f3f4f6;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            color: var(--text);
+        }
+        .btn-icon.danger:hover { background: var(--danger-light); color: var(--danger); }
+
+        .balance-display { font-size: 2rem; font-weight: 600; color: var(--primary); }
+        .target-display { font-size: 0.85rem; color: var(--text-light); margin-bottom: 14px; }
+
+        .progress-container {
+            width: 100%;
+            height: 12px;
+            background-color: var(--border);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+        .progress-bar { height: 100%; background-color: var(--primary); width: 0%; transition: width 0.4s ease; }
+        .progress-text { text-align: right; font-size: 0.8rem; font-weight: 500; color: var(--primary-dark); }
+
+        /* กล่องวางแผนการใช้เงิน (แบบยืนยันและแก้ไขได้) */
+        .calculator-box {
+            background: #f9fafb;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 16px;
+        }
+        .calc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .calc-header h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-edit-plan {
+            background: white;
+            border: 1px solid #d1d5db;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            color: var(--text);
+            font-weight: 500;
+        }
+        .btn-edit-plan:hover { background: #f3f4f6; }
+
+        .calc-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .calc-row label { font-size: 0.8rem; color: var(--text-light); white-space: nowrap; }
+        .calc-row input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            background: white;
+        }
+        .btn-confirm-plan {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-confirm-plan:hover { opacity: 0.9; }
+
+        .calc-preview {
+            font-size: 0.82rem;
+            color: var(--text-light);
+            text-align: center;
+            background: white;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px dashed #d1d5db;
+        }
+
+        /* สถานะหลังกดยืนยันแผน */
+        .plan-locked-info {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            margin-bottom: 10px;
+            background: white;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .plan-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .plan-stat-item {
+            background: white;
+            padding: 8px 4px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .plan-stat-item .p-label { font-size: 0.7rem; color: var(--text-light); }
+        .plan-stat-item .p-val { font-size: 0.88rem; font-weight: 600; margin-top: 2px; }
+
+        .plan-alert {
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .plan-alert.ok { background: var(--primary-light); color: var(--primary-dark); }
+        .plan-alert.done { background: var(--warning-light); color: #b45309; }
+        .plan-alert.over { background: var(--danger-light); color: var(--danger); }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .form-group label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: var(--text-light); }
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .form-group input:focus { border-color: var(--primary); }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn {
+            padding: 11px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-deposit { background-color: var(--primary); }
+        .btn-withdraw { background-color: var(--danger); }
+
+        /* หน้าสถิติ ประวัติ และตั้งค่า */
+        .summary-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tabs { display: flex; background: #f3f4f6; padding: 4px; border-radius: 10px; }
+        .tab-btn {
+            border: none;
+            background: transparent;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+        .tab-btn.active { background: white; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        .scope-select {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 0.8rem;
+            outline: none;
+            background: white;
+        }
+
+        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+        .stat-box {
+            background: #f9fafb;
+            padding: 12px 8px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .stat-box .stat-label { font-size: 0.75rem; color: var(--text-light); margin-bottom: 4px; }
+        .stat-box .stat-val { font-size: 0.95rem; font-weight: 600; }
+        .stat-val.in { color: var(--primary); }
+        .stat-val.out { color: var(--danger); }
+        .stat-val.net { color: var(--text); }
+
+        .chart-section { border-top: 1px solid var(--border); padding-top: 16px; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .chart-header h4 { font-size: 0.9rem; font-weight: 600; }
+        .chart-legend { display: flex; gap: 12px; font-size: 0.75rem; color: var(--text-light); }
+        .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+
+        .bar-chart {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 150px;
+            padding: 10px 4px 0;
+            border-bottom: 1px solid var(--border);
+            gap: 6px;
+        }
+        .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+        .bars-pair { display: flex; align-items: flex-end; gap: 3px; height: 115px; width: 100%; justify-content: center; }
+        .bar { width: 12px; border-radius: 4px 4px 0 0; transition: height 0.4s ease; min-height: 2px; }
+        .bar.dep { background-color: var(--primary); }
+        .bar.wit { background-color: var(--danger); }
+        .bar-month { font-size: 0.72rem; color: var(--text-light); margin-top: 6px; }
+
+        .transaction-list { list-style: none; }
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .transaction-item:last-child { border-bottom: none; }
+        .tx-note { font-weight: 500; font-size: 0.9rem; }
+        .tx-date { font-size: 0.75rem; color: var(--text-light); }
+        .tx-right { display: flex; align-items: center; gap: 10px; }
+        .tx-amount.plus { color: var(--primary); font-weight: 600; font-size: 0.95rem; }
+        .tx-amount.minus { color: var(--danger); font-weight: 600; font-size: 0.95rem; }
+        .btn-delete { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 0.9rem; }
+        .btn-delete:hover { color: var(--danger); }
+        .empty-state { text-align: center; color: var(--text-light); font-size: 0.85rem; padding: 20px 0; }
+
+        .backup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .btn-outline {
+            background: #f9fafb;
+            border: 1px solid #d1d5db;
+            color: var(--text);
+            padding: 12px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .btn-outline:hover { background: #f3f4f6; border-color: #9ca3af; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 16px;
+        }
+        .modal-box { background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; }
+        .modal-box h3 { margin-bottom: 16px; font-size: 1.1rem; }
+        .modal-box .form-group { margin-bottom: 12px; }
+        .icon-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+        .icon-option {
+            font-size: 1.4rem;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+        }
+        .icon-option.selected { border-color: var(--primary); background: var(--primary-light); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- PAGE 1: หน้ากระปุกออมสิน -->
+    <div id="page-jars" class="page active">
+        <div class="total-banner">
+            <div>
+                <div class="label">ยอดเงินออมรวมทุกกระปุก</div>
+                <div class="amount" id="totalAllJarsDisplay">฿0</div>
+            </div>
+            <div style="font-size: 2.2rem;">🏦</div>
+        </div>
+
+        <div class="jars-section">
+            <div class="jars-header">
+                <h2>กระปุกออมสินของคุณ</h2>
+                <button class="btn-add-jar" onclick="openModal('create')">+ สร้างกระปุกใหม่</button>
+            </div>
+            <div class="jars-list" id="jarsList"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="jar-title-group">
+                    <span id="currentJarIcon" style="font-size: 1.5rem;">🐷</span>
+                    <h3 id="currentJarName">เงินออมฉุกเฉิน</h3>
+                </div>
+                <div class="jar-actions">
+                    <button class="btn-icon" onclick="openModal('edit')">แก้ไข</button>
+                    <button class="btn-icon danger" onclick="deleteCurrentJar()">ลบ</button>
+                </div>
+            </div>
+
+            <div class="balance-display" id="jarBalanceDisplay">฿0</div>
+            <div class="target-display" id="jarTargetDisplay">เป้าหมาย ฿10,000</div>
+
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">0%</div>
+
+            <!-- กล่องวางแผนการใช้เงิน -->
+            <div class="calculator-box">
+                <div class="calc-header">
+                    <h4>🧮 วางแผนการใช้เงินจากกระปุกนี้</h4>
+                    <button type="button" class="btn-edit-plan" id="btnEditPlan" style="display: none;" onclick="unlockPlan()">✏️ แก้ไขแผน</button>
+                </div>
+
+                <!-- โหมดตั้งค่าแผน (ก่อนกดตกลงยืนยัน) -->
+                <div id="planSetupMode">
+                    <div class="calc-row">
+                        <label>ใช้ในอีก (วัน):</label>
+                        <input type="number" id="calcDaysInput" value="7" min="1" oninput="previewDailyBudget()">
+                        <button type="button" class="btn-confirm-plan" onclick="confirmBudgetPlan()">ตกลงยืนยัน</button>
+                    </div>
+                    <div class="calc-preview" id="calcPreviewDisplay">
+                        คำนวณเบื้องต้น: ใช้ได้วันละ ฿0
+                    </div>
+                </div>
+
+                <!-- โหมดแสดงผลหลังยืนยันแผนแล้ว (ล็อกยอดเฉลี่ยรายวันไว้) -->
+                <div id="planActiveMode" style="display: none;">
+                    <div class="plan-locked-info" id="planLockedSummary">
+                        ยืนยันแผน: ยอดตั้งต้น ฿0 สำหรับ 0 วัน
+                    </div>
+                    <div class="plan-stats-grid">
+                        <div class="plan-stat-item">
+                            <div class="p-label">งบต่อวัน</div>
+                            <div class="p-val" style="color: var(--text);" id="planDailyQuota">฿0</div>
+                        </div>
+                        <div class="plan-stat-item">
+                            <div class="p-label">ใช้ไปวันนี้</div>
+                            <div class="p-val" style="color: var(--danger);" id="planTodaySpent">฿0</div>
+                        </div>
+                        <div class="plan-stat-item">
+                            <div class="p-label">เหลือใช้วันนี้</div>
+                            <div class="p-val" style="color: var(--primary);" id="planTodayRemaining">฿0</div>
+                        </div>
+                    </div>
+                    <div class="plan-alert ok" id="planAlertBox">
+                        วันนี้คุณยังใช้เงินได้อีก ฿0
+                    </div>
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 16px 0;">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>จำนวนเงิน (บาท)</label>
+                    <input type="number" id="amountInput" placeholder="0" min="1">
+                </div>
+                <div class="form-group">
+                    <label>บันทึกช่วยจำ</label>
+                    <input type="text" id="noteInput" placeholder="เช่น ค่าอาหาร, ค่าเดินทาง">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-deposit" onclick="addTransaction('deposit')">+ ฝากเงิน</button>
+                <button class="btn btn-withdraw" onclick="addTransaction('withdraw')">- ถอนเงิน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 2: หน้าสถิติ & กราฟ -->
+    <div id="page-stats" class="page">
+        <div class="card">
+            <h2 style="font-size: 1.1rem; margin-bottom: 14px;">📊 สถิติการออมเงิน</h2>
+            <div class="summary-controls">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="setPeriod('day', this)">วันนี้</button>
+                    <button class="tab-btn" onclick="setPeriod('week', this)">สัปดาห์นี้</button>
+                    <button class="tab-btn" onclick="setPeriod('month', this)">เดือนนี้</button>
+                </div>
+                <select class="scope-select" id="summaryScope" onchange="updateSummaryAndChart()">
+                    <option value="all">รวมทุกกระปุก</option>
+                    <option value="current">เฉพาะกระปุกนี้</option>
+                </select>
+            </div>
+
+            <div class="summary-grid">
+                <div class="stat-box">
+                    <div class="stat-label">ฝากเพิ่ม</div>
+                    <div class="stat-val in" id="sumDeposit">+฿0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">ถอนออก</div>
+                    <div class="stat-val out" id="sumWithdraw">-฿0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">ออมสุทธิ</div>
+                    <div class="stat-val net" id="sumNet">฿0</div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h4>สถิติย้อนหลัง 6 เดือน</h4>
+                    <div class="chart-legend">
+                        <span><i class="legend-dot" style="background: var(--primary);"></i>ฝาก</span>
+                        <span><i class="legend-dot" style="background: var(--danger);"></i>ถอน</span>
+                    </div>
+                </div>
+                <div class="bar-chart" id="monthlyBarChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 3: หน้าประวัติรายการ -->
+    <div id="page-history" class="page">
+        <div class="card">
+            <h2 style="font-size: 1.1rem; margin-bottom: 14px;">📜 ประวัติการทำรายการ</h2>
+            <ul class="transaction-list" id="fullTransactionList"></ul>
+        </div>
+    </div>
+
+    <!-- PAGE 4: หน้าตั้งค่า & สำรองข้อมูล -->
+    <div id="page-settings" class="page">
+        <div class="card">
+            <h2 style="font-size: 1.1rem; margin-bottom: 6px;">⚙️ ตั้งค่าและข้อมูล</h2>
+            <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 16px;">
+                สำรองข้อมูลเก็บไว้ หรือส่งออกเป็นไฟล์ Excel
+            </p>
+            <div class="backup-grid">
+                <button class="btn-outline" onclick="exportBackupJSON()">💾 สำรองข้อมูล</button>
+                <button class="btn-outline" onclick="triggerImport()">📂 กู้คืนข้อมูล</button>
+                <button class="btn-outline" onclick="exportCSV()">📊 โหลด Excel</button>
+            </div>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importBackupJSON(event)">
+        </div>
+    </div>
+
+</div>
+
+<!-- เมนูด้านล่าง (Bottom Navigation) -->
+<nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchPage('page-jars', this)">
+        <span class="icon">🐷</span>
+        <span>กระปุก</span>
+    </button>
+    <button class="nav-item" onclick="switchPage('page-stats', this)">
+        <span class="icon">📊</span>
+        <span>สถิติ</span>
+    </button>
+    <button class="nav-item" onclick="switchPage('page-history', this)">
+        <span class="icon">📜</span>
+        <span>ประวัติ</span>
+    </button>
+    <button class="nav-item" onclick="switchPage('page-settings', this)">
+        <span class="icon">⚙️</span>
+        <span>ตั้งค่า</span>
+    </button>
+</nav>
+
+<!-- Modal สำหรับสร้าง/แก้ไขกระปุก -->
+<div class="modal-overlay" id="jarModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">สร้างกระปุกใหม่</h3>
+        <div class="form-group">
+            <label>เลือกไอคอน</label>
+            <div class="icon-picker" id="iconPicker">
+                <button type="button" class="icon-option selected" onclick="selectIcon(this)">🐷</button>
+                <button type="button" class="icon-option" onclick="selectIcon(this)">✈️</button>
+                <button type="button" class="icon-option" onclick="selectIcon(this)">📱</button>
+                <button type="button" class="icon-option" onclick="selectIcon(this)">🏠</button>
+                <button type="button" class="icon-option" onclick="selectIcon(this)">🚗</button>
+                <button type="button" class="icon-option" onclick="selectIcon(this)">💍</button>
+                <button type="button" class="icon-option" onclick="selectIcon(this)">🎓</button>
+                <button type="button" class="icon-option" onclick="selectIcon(this)">🏥</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>ชื่อกระปุก / เป้าหมาย</label>
+            <input type="text" id="modalJarName" placeholder="เช่น ทริปญี่ปุ่น">
+        </div>
+        <div class="form-group">
+            <label>ยอดเงินเป้าหมาย (บาท)</label>
+            <input type="number" id="modalJarTarget" placeholder="เช่น 20000" min="1">
+        </div>
+        <div class="btn-group" style="margin-top: 16px;">
+            <button class="btn" style="background: #9ca3af;" onclick="closeModal()">ยกเลิก</button>
+            <button class="btn btn-deposit" onclick="saveJar()">บันทึก</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const defaultData = {
+        activeJarId: 'jar_1',
+        jars: [
+            { id: 'jar_1', name: 'เงินออมฉุกเฉิน', icon: '🐷', target: 10000, budgetPlan: null }
+        ],
+        transactions: []
+    };
+
+    let appData = JSON.parse(localStorage.getItem('multiJarSavingsApp')) || defaultData;
+    let currentPeriod = 'day';
+    let modalMode = 'create';
+    let selectedIcon = '🐷';
+
+    function switchPage(pageId, btnEl) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        
+        document.getElementById(pageId).classList.add('active');
+        btnEl.classList.add('active');
+        window.scrollTo(0, 0);
+    }
+
+    function saveData() {
+        localStorage.setItem('multiJarSavingsApp', JSON.stringify(appData));
+        renderAll();
+    }
+
+    function getJarBalance(jarId) {
+        return appData.transactions
+            .filter(tx => tx.jarId === jarId)
+            .reduce((sum, tx) => tx.type === 'deposit' ? sum + tx.amount : sum - tx.amount, 0);
+    }
+
+    function getTotalBalance() {
+        return appData.transactions.reduce((sum, tx) => tx.type === 'deposit' ? sum + tx.amount : sum - tx.amount, 0);
+    }
+
+    function formatMoney(num) {
+        return num.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function selectJar(jarId) {
+        appData.activeJarId = jarId;
+        saveData();
+    }
+
+    // --- ระบบวางแผนการใช้เงิน (ยืนยัน / แก้ไข / ล็อกยอด) ---
+    function previewDailyBudget() {
+        const currentJar = appData.jars.find(j => j.id === appData.activeJarId) || appData.jars[0];
+        const balance = getJarBalance(currentJar.id);
+        const daysInput = Number(document.getElementById('calcDaysInput').value);
+        const previewEl = document.getElementById('calcPreviewDisplay');
+
+        if (!daysInput || daysInput <= 0) {
+            previewEl.innerText = 'กรุณาระบุจำนวนวันให้ถูกต้อง';
+            return;
+        }
+
+        const perDay = balance > 0 ? balance / daysInput : 0;
+        previewEl.innerText = `คำนวณเบื้องต้น: ใช้ได้วันละ ฿${formatMoney(perDay)} (ยังไม่ยืนยัน)`;
+    }
+
+    function confirmBudgetPlan() {
+        const currentJar = appData.jars.find(j => j.id === appData.activeJarId) || appData.jars[0];
+        const balance = getJarBalance(currentJar.id);
+        const days = Number(document.getElementById('calcDaysInput').value);
+
+        if (balance <= 0) {
+            alert('ยอดเงินในกระปุกต้องมากกว่า 0 บาท จึงจะเริ่มวางแผนได้ครับ');
+            return;
+        }
+        if (!days || days <= 0) {
+            alert('กรุณาระบุจำนวนวันให้ถูกต้องครับ');
+            return;
+        }
+
+        // บันทึกแผนและล็อกยอดเฉลี่ยต่อวันไว้ (ไม่คำนวณใหม่เมื่อยอดเงินเปลี่ยน)
+        currentJar.budgetPlan = {
+            confirmed: true,
+            initialBalance: balance,
+            days: days,
+            dailyAmount: balance / days,
+            confirmedAt: Date.now()
+        };
+
+        saveData();
+    }
+
+    function unlockPlan() {
+        const currentJar = appData.jars.find(j => j.id === appData.activeJarId) || appData.jars[0];
+        if (currentJar && currentJar.budgetPlan) {
+            document.getElementById('calcDaysInput').value = currentJar.budgetPlan.days;
+            currentJar.budgetPlan = null;
+            saveData();
+        }
+    }
+
+    function renderBudgetPlanner(currentJar, currentBalance) {
+        const setupMode = document.getElementById('planSetupMode');
+        const activeMode = document.getElementById('planActiveMode');
+        const btnEditPlan = document.getElementById('btnEditPlan');
+
+        if (currentJar.budgetPlan && currentJar.budgetPlan.confirmed) {
+            // โหมดยืนยันแล้ว: ล็อกงบต่อวันไว้ ไม่คำนวณจากยอดคงเหลือใหม่
+            setupMode.style.display = 'none';
+            activeMode.style.display = 'block';
+            btnEditPlan.style.display = 'inline-block';
+
+            const plan = currentJar.budgetPlan;
+            const dailyQuota = plan.dailyAmount;
+
+            // คำนวณยอดที่ถอนใช้ไป "เฉพาะวันนี้" (นับตั้งแต่เวลาที่กดยืนยันแผน หรือภายในวันนี้)
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const countSince = Math.max(startOfToday, plan.confirmedAt);
+
+            const todaySpent = appData.transactions
+                .filter(tx => tx.jarId === currentJar.id && tx.type === 'withdraw' && tx.timestamp >= countSince)
+                .reduce((sum, tx) => sum + tx.amount, 0);
+
+            // ยอดคงเหลือรายวัน (ไม่เกินยอดเงินจริงที่มีอยู่ในกระปุก)
+            let remainingToday = dailyQuota - todaySpent;
+            if (remainingToday > currentBalance) {
+                remainingToday = currentBalance;
+            }
+
+            document.getElementById('planLockedSummary').innerText = 
+                `📌 ยืนยันแผนแล้ว: ยอดตั้งต้น ฿${formatMoney(plan.initialBalance)} ใช้ ${plan.days} วัน`;
+            document.getElementById('planDailyQuota').innerText = `฿${formatMoney(dailyQuota)}`;
+            document.getElementById('planTodaySpent').innerText = `฿${formatMoney(todaySpent)}`;
+            
+            const remDisplay = Math.max(0, remainingToday);
+            document.getElementById('planTodayRemaining').innerText = `฿${formatMoney(remDisplay)}`;
+
+            const alertBox = document.getElementById('planAlertBox');
+            alertBox.className = 'plan-alert';
+
+            if (todaySpent > dailyQuota) {
+                const overAmount = todaySpent - dailyQuota;
+                alertBox.classList.add('over');
+                alertBox.innerText = `⚠️ วันนี้คุณใช้เกินงบไป ฿${formatMoney(overAmount)} (คงเหลือรายวัน ฿0)`;
+            } else if (todaySpent === dailyQuota || remDisplay === 0) {
+                alertBox.classList.add('done');
+                alertBox.innerText = `✅ ใช้จ่ายครบจำนวนของวันนี้แล้ว (ยอดคงเหลือรายวัน: ฿0)`;
+            } else {
+                alertBox.classList.add('ok');
+                alertBox.innerText = `👍 วันนี้คุณยังสามารถใช้เงินได้อีก ฿${formatMoney(remDisplay)}`;
+            }
+
+        } else {
+            // โหมดตั้งค่าแผน
+            setupMode.style.display = 'block';
+            activeMode.style.display = 'none';
+            btnEditPlan.style.display = 'none';
+            previewDailyBudget();
+        }
+    }
+    // ---------------------------------------------------
+
+    function openModal(mode) {
+        modalMode = mode;
+        const modal = document.getElementById('jarModal');
+        const currentJar = appData.jars.find(j => j.id === appData.activeJarId);
+
+        if (mode === 'create') {
+            document.getElementById('modalTitle').innerText = 'สร้างกระปุกใหม่';
+            document.getElementById('modalJarName').value = '';
+            document.getElementById('modalJarTarget').value = '';
+            selectedIcon = '🐷';
+        } else {
+            document.getElementById('modalTitle').innerText = 'แก้ไขกระปุก';
+            document.getElementById('modalJarName').value = currentJar.name;
+            document.getElementById('modalJarTarget').value = currentJar.target;
+            selectedIcon = currentJar.icon;
+        }
+
+        document.querySelectorAll('.icon-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.innerText === selectedIcon);
+        });
+
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('jarModal').style.display = 'none';
+    }
+
+    function selectIcon(btn) {
+        document.querySelectorAll('.icon-option').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedIcon = btn.innerText;
+    }
+
+    function saveJar() {
+        const name = document.getElementById('modalJarName').value.trim();
+        const target = Number(document.getElementById('modalJarTarget').value);
+
+        if (!name || !target || target <= 0) {
+            alert('กรุณากรอกชื่อกระปุกและเป้าหมายให้ถูกต้องครับ');
+            return;
+        }
+
+        if (modalMode === 'create') {
+            const newId = 'jar_' + Date.now();
+            appData.jars.push({ id: newId, name, icon: selectedIcon, target, budgetPlan: null });
+            appData.activeJarId = newId;
+        } else {
+            const jar = appData.jars.find(j => j.id === appData.activeJarId);
+            if (jar) {
+                jar.name = name;
+                jar.icon = selectedIcon;
+                jar.target = target;
+            }
+        }
+
+        closeModal();
+        saveData();
+    }
+
+    function deleteCurrentJar() {
+        if (appData.jars.length <= 1) {
+            alert('ต้องมีกระปุกอย่างน้อย 1 ใบครับ');
+            return;
+        }
+        const currentJar = appData.jars.find(j => j.id === appData.activeJarId);
+        if (confirm(`ต้องการลบกระปุก "${currentJar.name}" และประวัติทั้งหมดใช่หรือไม่?`)) {
+            appData.jars = appData.jars.filter(j => j.id !== appData.activeJarId);
+            appData.transactions = appData.transactions.filter(tx => tx.jarId !== appData.activeJarId);
+            appData.activeJarId = appData.jars[0].id;
+            saveData();
+        }
+    }
+
+    function addTransaction(type) {
+        const amountInput = document.getElementById('amountInput');
+        const noteInput = document.getElementById('noteInput');
+        const amount = Number(amountInput.value);
+        const note = noteInput.value.trim() || (type === 'deposit' ? 'ฝากเงินออม' : 'ถอนเงินใช้จ่าย');
+
+        if (!amount || amount <= 0) {
+            alert('กรุณากรอกจำนวนเงินให้ถูกต้องครับ');
+            return;
+        }
+
+        const currentJar = appData.jars.find(j => j.id === appData.activeJarId) || appData.jars[0];
+        const currentBalance = getJarBalance(currentJar.id);
+        
+        if (type === 'withdraw' && amount > currentBalance) {
+            alert('ยอดเงินในกระปุกนี้ไม่เพียงพอสำหรับการถอนครับ');
+            return;
+        }
+
+        appData.transactions.unshift({
+            id: Date.now(),
+            jarId: currentJar.id,
+            type: type,
+            amount: amount,
+            note: note,
+            timestamp: Date.now()
+        });
+
+        amountInput.value = '';
+        noteInput.value = '';
+        saveData();
+
+        // แจ้งเตือนสรุปยอดคงเหลือรายวันทันทีหลังถอนเงิน (หากกระปุกนี้ยืนยันแผนไว้แล้ว)
+        if (type === 'withdraw' && currentJar.budgetPlan && currentJar.budgetPlan.confirmed) {
+            const plan = currentJar.budgetPlan;
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const countSince = Math.max(startOfToday, plan.confirmedAt);
+
+            const todaySpent = appData.transactions
+                .filter(tx => tx.jarId === currentJar.id && tx.type === 'withdraw' && tx.timestamp >= countSince)
+                .reduce((sum, tx) => sum + tx.amount, 0);
+
+            const newBalance = getJarBalance(currentJar.id);
+            let remainingToday = Math.min(plan.dailyAmount - todaySpent, newBalance);
+
+            if (todaySpent >= plan.dailyAmount) {
+                alert(`📢 แจ้งเตือนงบรายวัน:\nคุณใช้จ่ายครบจำนวนโควตาของวันนี้แล้ว!\nยอดคงเหลือรายวัน: ฿0`);
+            } else {
+                alert(`✅ บันทึกรายจ่าย ฿${formatMoney(amount)} เรียบร้อย\nยอดคงเหลือที่ใช้ได้ในวันนี้: ฿${formatMoney(Math.max(0, remainingToday))}`);
+            }
+        } else {
+            alert('บันทึกรายการสำเร็จ!');
+        }
+    }
+
+    function deleteTransaction(id) {
+        if (confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) {
+            appData.transactions = appData.transactions.filter(tx => tx.id !== id);
+            saveData();
+        }
+    }
+
+    function setPeriod(period, btnEl) {
+        currentPeriod = period;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btnEl.classList.add('active');
+        updateSummaryAndChart();
+    }
+
+    function updateSummaryAndChart() {
+        const scope = document.getElementById('summaryScope').value;
+        const now = new Date();
+        
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
+        const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek).getTime();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+        let minTime = startOfDay;
+        if (currentPeriod === 'week') minTime = startOfWeek;
+        if (currentPeriod === 'month') minTime = startOfMonth;
+
+        const scopedTxs = appData.transactions.filter(tx => scope === 'all' ? true : tx.jarId === appData.activeJarId);
+        const filteredTx = scopedTxs.filter(tx => tx.timestamp >= minTime);
+        let totalDeposit = 0;
+        let totalWithdraw = 0;
+
+        filteredTx.forEach(tx => {
+            if (tx.type === 'deposit') totalDeposit += tx.amount;
+            else totalWithdraw += tx.amount;
+        });
+
+        const net = totalDeposit - totalWithdraw;
+        document.getElementById('sumDeposit').innerText = `+฿${formatMoney(totalDeposit)}`;
+        document.getElementById('sumWithdraw').innerText = `-฿${formatMoney(totalWithdraw)}`;
+        
+        const netEl = document.getElementById('sumNet');
+        netEl.innerText = `${net >= 0 ? '+' : '-'}฿${formatMoney(Math.abs(net))}`;
+        netEl.style.color = net > 0 ? 'var(--primary)' : (net < 0 ? 'var(--danger)' : 'var(--text)');
+
+        renderMonthlyChart(scopedTxs);
+    }
+
+    function renderMonthlyChart(scopedTxs) {
+        const chartEl = document.getElementById('monthlyBarChart');
+        chartEl.innerHTML = '';
+
+        const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const now = new Date();
+        const monthsData = [];
+
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            monthsData.push({
+                year: d.getFullYear(),
+                month: d.getMonth(),
+                label: thaiMonths[d.getMonth()],
+                deposit: 0,
+                withdraw: 0
+            });
+        }
+
+        scopedTxs.forEach(tx => {
+            const txDate = new Date(tx.timestamp);
+            const targetMonth = monthsData.find(m => m.year === txDate.getFullYear() && m.month === txDate.getMonth());
+            if (targetMonth) {
+                if (tx.type === 'deposit') targetMonth.deposit += tx.amount;
+                else targetMonth.withdraw += tx.amount;
+            }
+        });
+
+        const maxVal = Math.max(...monthsData.map(m => Math.max(m.deposit, m.withdraw)), 1);
+
+        monthsData.forEach(m => {
+            const depHeight = Math.round((m.deposit / maxVal) * 100);
+            const witHeight = Math.round((m.withdraw / maxVal) * 100);
+
+            const col = document.createElement('div');
+            col.className = 'bar-col';
+            col.innerHTML = `
+                <div class="bars-pair" title="${m.label}: ฝาก ฿${formatMoney(m.deposit)} | ถอน ฿${formatMoney(m.withdraw)}">
+                    <div class="bar dep" style="height: ${m.deposit > 0 ? Math.max(depHeight, 4) : 0}%"></div>
+                    <div class="bar wit" style="height: ${m.withdraw > 0 ? Math.max(witHeight, 4) : 0}%"></div>
+                </div>
+                <div class="bar-month">${m.label}</div>
+            `;
+            chartEl.appendChild(col);
+        });
+    }
+
+    function exportBackupJSON() {
+        const dataStr = JSON.stringify(appData, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `savings-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function triggerImport() {
+        document.getElementById('importFileInput').click();
+    }
+
+    function importBackupJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported && Array.isArray(imported.jars) && Array.isArray(imported.transactions)) {
+                    if (confirm('การกู้คืนข้อมูลจะเขียนทับข้อมูลปัจจุบัน ยืนยันหรือไม่?')) {
+                        appData = imported;
+                        saveData();
+                        alert('กู้คืนข้อมูลสำเร็จ!');
+                    }
+                } else {
+                    alert('ไฟล์ไม่ถูกต้อง');
+                }
+            } catch (err) {
+                alert('ไม่สามารถอ่านไฟล์ได้');
+            }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    function exportCSV() {
+        if (appData.transactions.length === 0) {
+            alert('ยังไม่มีรายการให้ส่งออก');
+            return;
+        }
+
+        let csvContent = '\uFEFFวันที่และเวลา,กระปุกออมสิน,ประเภท,จำนวนเงิน (บาท),บันทึกช่วยจำ\n';
+        appData.transactions.forEach(tx => {
+            const jar = appData.jars.find(j => j.id === tx.jarId);
+            const jarName = jar ? jar.name : 'กระปุก';
+            const dateStr = new Date(tx.timestamp).toLocaleString('th-TH').replace(/,/g, '');
+            const typeStr = tx.type === 'deposit' ? 'ฝากเงิน' : 'ถอนเงิน';
+            csvContent += `${dateStr},"${jarName}",${typeStr},${tx.amount},"${tx.note.replace(/"/g, '""')}"\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `savings-report-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function renderAll() {
+        document.getElementById('totalAllJarsDisplay').innerText = `฿${formatMoney(getTotalBalance())}`;
+
+        const jarsListEl = document.getElementById('jarsList');
+        jarsListEl.innerHTML = '';
+        appData.jars.forEach(jar => {
+            const bal = getJarBalance(jar.id);
+            const isActive = jar.id === appData.activeJarId;
+            const div = document.createElement('div');
+            div.className = `jar-chip ${isActive ? 'active' : ''}`;
+            div.onclick = () => selectJar(jar.id);
+            div.innerHTML = `
+                <div class="jar-chip-icon">${jar.icon}</div>
+                <div class="jar-chip-name">${jar.name}</div>
+                <div class="jar-chip-balance">฿${formatMoney(bal)}</div>
+            `;
+            jarsListEl.appendChild(div);
+        });
+
+        const currentJar = appData.jars.find(j => j.id === appData.activeJarId) || appData.jars[0];
+        const currentBal = getJarBalance(currentJar.id);
+        
+        document.getElementById('currentJarIcon').innerText = currentJar.icon;
+        document.getElementById('currentJarName').innerText = currentJar.name;
+        document.getElementById('jarBalanceDisplay').innerText = `฿${formatMoney(currentBal)}`;
+        document.getElementById('jarTargetDisplay').innerText = `เป้าหมาย ฿${formatMoney(currentJar.target)}`;
+
+        let pct = Math.min((currentBal / currentJar.target) * 100, 100);
+        if (pct < 0) pct = 0;
+        document.getElementById('progressBar').style.width = `${pct}%`;
+        document.getElementById('progressText').innerText = `${pct.toFixed(1)}%`;
+
+        // แสดงผลกล่องวางแผนการใช้เงิน
+        renderBudgetPlanner(currentJar, currentBal);
+
+        updateSummaryAndChart();
+
+        const fullTxListEl = document.getElementById('fullTransactionList');
+        fullTxListEl.innerHTML = '';
+
+        if (appData.transactions.length === 0) {
+            fullTxListEl.innerHTML = '<div class="empty-state">ยังไม่มีประวัติการทำรายการ</div>';
+            return;
+        }
+
+        appData.transactions.forEach(tx => {
+            const jar = appData.jars.find(j => j.id === tx.jarId);
+            const jarName = jar ? jar.name : 'กระปุก';
+            const li = document.createElement('li');
+            li.className = 'transaction-item';
+            const isDep = tx.type === 'deposit';
+            const dateStr = new Date(tx.timestamp).toLocaleDateString('th-TH', {
+                day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
+
+            li.innerHTML = `
+                <div>
+                    <div class="tx-note">${tx.note} <span style="font-size:0.75rem; color:var(--text-light);">(${jarName})</span></div>
+                    <div class="tx-date">${dateStr}</div>
+                </div>
+                <div class="tx-right">
+                    <span class="tx-amount ${isDep ? 'plus' : 'minus'}">${isDep ? '+' : '-'}฿${formatMoney(tx.amount)}</span>
+                    <button class="btn-delete" onclick="deleteTransaction(${tx.id})">✕</button>
+                </div>
+            `;
+            fullTxListEl.appendChild(li);
+        });
+    }
+
+    renderAll();
+</script>
+
+</body>
+</html>
